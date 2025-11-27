@@ -1,39 +1,46 @@
 "use client";
-import { useEffect, useState } from "react";
 
-/** Simple theme toggle - toggles `theme-dark` class on <html> */
+import { useEffect, useState } from "react";
+import { Sun, Moon } from "lucide-react";
+
 export default function ThemeToggle() {
-  const [isDark, setIsDark] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    const s = localStorage.getItem("theme");
-    if (s) return s === "dark";
-    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-  });
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (isDark) {
-      root.classList.add("theme-dark");
-    } else {
-      root.classList.remove("theme-dark");
+    const saved = localStorage.getItem("theme") as "light" | "dark" | null;
+
+    if (saved) {
+      setTheme(saved);
+      document.documentElement.classList.add(saved === "dark" ? "theme-dark" : "theme-light");
+      return;
     }
-    localStorage.setItem("theme", isDark ? "dark" : "light");
-  }, [isDark]);
+
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const systemTheme = prefersDark ? "dark" : "light";
+
+    setTheme(systemTheme);
+    document.documentElement.classList.add(systemTheme === "dark" ? "theme-dark" : "theme-light");
+  }, []);
+
+  const toggle = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+
+    document.documentElement.classList.remove("theme-dark", "theme-light");
+    document.documentElement.classList.add(
+      newTheme === "dark" ? "theme-dark" : "theme-light"
+    );
+
+    localStorage.setItem("theme", newTheme);
+    setTheme(newTheme);
+  };
 
   return (
     <button
-      onClick={() => setIsDark((v) => !v)}
+      onClick={toggle}
+      className="inline-flex items-center gap-2 px-3 py-1 rounded-md hover:scale-105 transition-transform"
       aria-label="Toggle theme"
-      style={{
-        padding: "8px 10px",
-        borderRadius: 10,
-        background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
-        color: isDark ? "#fff" : "#0b1a28",
-        border: "1px solid rgba(255,255,255,0.06)",
-        cursor: "pointer",
-      }}
     >
-      {isDark ? "🌙 Dark" : "☀️ Light"}
+      {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
     </button>
   );
 }
