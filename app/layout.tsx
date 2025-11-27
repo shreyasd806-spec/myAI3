@@ -1,29 +1,70 @@
+// app/layout.tsx
+import React, { useEffect, useState } from "react";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/sonner";
+import { Sun, Moon } from "lucide-react";
 
-// Use the Inter font, which is clean and professional (often used in finance/tech)
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "RateMind | Real-Time Financial Comparison",
-  description: "Your AI financial analyst for real-time rates on HYSAs, CDs, and credit cards.",
+  title: "Finance Advisor Chat",
+  description: "A friendly financial product advisor",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+function ThemeToggle() {
+  const [theme, setTheme] = useState<"light" | "dark">(
+    (typeof window !== "undefined" && (localStorage.getItem("theme") as "light" | "dark")) || "light"
+  );
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove("theme-dark", "theme-light");
+    root.classList.add(theme === "dark" ? "theme-dark" : "theme-light");
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  useEffect(() => {
+    // initialize from prefers-color-scheme if not set
+    if (!localStorage.getItem("theme")) {
+      const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setTheme(prefersDark ? "dark" : "light");
+    }
+  }, []);
+
   return (
-    // 🔑 Fix: Enforce dark mode class and global background/text color here.
-    // This is the absolute highest level, preventing body or default CSS from overriding.
-    <html lang="en" className="dark bg-slate-950 text-slate-100 antialiased">
-      <body className={inter.className}>
-        {children}
-        <Toaster />
+    <button
+      onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+      aria-label="Toggle theme"
+      className="inline-flex items-center gap-2 px-3 py-1 rounded-md ring-0 hover:scale-105 transition-transform"
+    >
+      {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+      <span className="sr-only">Toggle theme</span>
+    </button>
+  );
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" className={`${inter.variable} ${geistMono.variable}`}>
+      <body>
+        {/* App shell provides background gradient and padding */}
+        <div className="app-shell min-h-screen flex items-center justify-center">
+          <div className="w-full max-w-4xl mx-auto">
+            {/* Top-right theme toggle */}
+            <div className="flex justify-end mb-4">
+              <ThemeToggle />
+            </div>
+
+            {/* Centered content (chat-card) */}
+            <div className="chat-card overflow-hidden">
+              {children}
+            </div>
+          </div>
+        </div>
       </body>
     </html>
   );
 }
+
