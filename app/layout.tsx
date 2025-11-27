@@ -1,15 +1,35 @@
-// app/layout.tsx
-import "./globals.css";  // ✔ Correct path based on your folder structure
+import type { Metadata } from "next";
+import { Inter, Geist_Mono } from "next/font/google";
 
-export const metadata = {
-  title: "Finatic AI",
-  description: "Real-time financial product comparison",
+import "./globals.css";
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "MyAI3",
+  description: "MyAI3",
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body
+        className={`${inter.variable} ${geistMono.variable} antialiased`}
+      >
+        {children}
+      </body>
     </html>
   );
 }
