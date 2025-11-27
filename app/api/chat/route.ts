@@ -9,14 +9,13 @@ import {
 } from 'ai';
 
 import { MODEL } from '@/config';
-// 🔑 FIX: Import the individual prompt parts that are actually exported 
-// This replaces the incorrect 'import { SYSTEM_PROMPT } from '@/prompts';'
+// 🔑 FIX: Import only the essential, known prompt parts (or assume they exist)
 import { 
     IDENTITY_PROMPT, 
-    TOOL_CALLING_PROMPT, 
     TONE_STYLE_PROMPT,
-    GUARDRAILS_PROMPT,
-    CITATIONS_PROMPT
+    CITATIONS_PROMPT,
+    TOOL_CALLING_PROMPT, // We will ensure this is defined in prompts.ts
+    GUARDRAILS_PROMPT // We will ensure this is defined in prompts.ts
 } from '@/prompts'; 
 
 import { isContentFlagged } from '@/lib/moderation';
