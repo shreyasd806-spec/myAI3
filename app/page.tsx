@@ -15,8 +15,7 @@ import { Input } from "@/components/ui/input";
 import { useChat } from "@ai-sdk/react";
 import { ArrowUp, Loader2, Plus, Square, DollarSign } from "lucide-react";
 import { MessageWall } from "@/components/messages/message-wall";
-import { ChatHeader } from "@/app/parts/chat-header";
-import { ChatHeaderBlock } from "@/app/parts/chat-header";
+// ❌ REMOVED IMPORTS: ChatHeader and ChatHeaderBlock
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UIMessage } from "ai";
 import { useEffect, useState, useRef } from "react";
@@ -140,36 +139,47 @@ export default function Chat() {
     // 🔑 Theme Update: Container to match the layout's background
     <div className="flex h-screen items-center justify-center font-sans bg-slate-950 text-slate-100">
       <main className="w-full bg-slate-950 h-screen relative">
-        {/* 🔑 Header Area: Fixed, Darker Slate Background */}
+        
+        {/* 🔑 FIXED HEADER: INLINED CHAT HEADER LOGIC (Removing dependency on app/parts/chat-header) */}
         <div className="fixed top-0 left-0 right-0 z-50 bg-slate-900 shadow-lg border-b border-slate-700/50 overflow-visible pb-4">
-          <div className="relative overflow-visible">
-            <ChatHeader>
-              <ChatHeaderBlock className="pl-4">
-                <h1 className="text-xl font-bold tracking-tighter text-blue-400">RateMind</h1>
-              </ChatHeaderBlock>
-              <ChatHeaderBlock className="justify-center items-center">
-                <Avatar
-                  className="size-8 ring-2 ring-blue-500 bg-slate-800" // Themed ring color
-                >
-                  {/* 🔑 Icon/Logo: Use a financial icon for branding */}
-                  <AvatarFallback className="text-xl bg-slate-800 text-yellow-300">
-                    <DollarSign className="size-5" />
-                  </AvatarFallback>
-                </Avatar>
-                <p className="tracking-tight text-slate-300 font-medium ml-2">Chat with {AI_NAME}</p>
-              </ChatHeaderBlock>
-              <ChatHeaderBlock className="justify-end pr-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700/80 rounded-full transition-colors"
-                  onClick={clearChat}
-                >
-                  <Plus className="size-4 mr-1 text-blue-400" />
-                  {CLEAR_CHAT_TEXT}
-                </Button>
-              </ChatHeaderBlock>
-            </ChatHeader>
+          <div className="relative overflow-visible max-w-4xl w-full mx-auto"> 
+            
+            {/* Replaces <ChatHeader> */}
+            <header className="flex items-center justify-between p-4 h-[60px]">
+                
+                {/* Replaces <ChatHeaderBlock className="pl-4"> */}
+                <div className="flex-1 pl-0"> 
+                    <h1 className="text-xl font-bold tracking-tighter text-blue-400">RateMind</h1>
+                </div>
+
+                {/* Replaces <ChatHeaderBlock className="justify-center items-center"> */}
+                <div className="flex-1 flex justify-center items-center">
+                    <Avatar
+                      className="size-8 ring-2 ring-blue-500 bg-slate-800"
+                    >
+                      {/* 🔑 Icon/Logo: Use a financial icon for branding */}
+                      <AvatarFallback className="text-xl bg-slate-800 text-yellow-300">
+                        <DollarSign className="size-5" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <p className="tracking-tight text-slate-300 font-medium ml-2">Chat with {AI_NAME}</p>
+                </div>
+
+                {/* Replaces <ChatHeaderBlock className="justify-end pr-4"> */}
+                <div className="flex-1 flex justify-end pr-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700/80 rounded-full transition-colors"
+                      onClick={clearChat}
+                    >
+                      <Plus className="size-4 mr-1 text-blue-400" />
+                      {CLEAR_CHAT_TEXT}
+                    </Button>
+                </div>
+            </header>
+            {/* End Header Replacement */}
+            
           </div>
         </div>
         
