@@ -5,24 +5,34 @@ import {
     stepCountIs, 
     createUIMessageStream, 
     createUIMessageStreamResponse,
-    type Tool // <-- Added 'type Tool' to define the tools object type
+    type Tool 
 } from 'ai';
 
 import { MODEL } from '@/config';
-import { SYSTEM_PROMPT } from '@/prompts';
+// 🔑 FIX: Import the individual prompt parts that are actually exported 
+// This replaces the incorrect 'import { SYSTEM_PROMPT } from '@/prompts';'
+import { 
+    IDENTITY_PROMPT, 
+    TOOL_CALLING_PROMPT, 
+    TONE_STYLE_PROMPT,
+    GUARDRAILS_PROMPT,
+    CITATIONS_PROMPT
+} from '@/prompts'; 
+
 import { isContentFlagged } from '@/lib/moderation';
+import { getCurrentRatesTool } from "./tools/get-current-rates"; // Your new Exa tool import
+import { vectorDatabaseSearch } from './tools/search-vector-database'; // Keep RAG tool import
 
-// ❌ OLD IMPORTS - We are removing the generic web search 
-// import { webSearch } from './tools/web-search'; 
-
-// 🔑 NEW IMPORT: Import your specialized financial tool
-import { getCurrentRatesTool } from "./tools/get-current-rates"; 
-
-// Keep the Pinecone RAG tool import if you want RAG for definitions
-import { vectorDatabaseSearch } from './tools/search-vector-database';
-
-// Extend timeout for complex search and reasoning operations
 export const maxDuration = 30; 
+
+// 🔑 FIX: Assemble the full system prompt string here from the component parts
+const FULL_SYSTEM_PROMPT = `
+${IDENTITY_PROMPT}
+${TONE_STYLE_PROMPT}
+${GUARDRAILS_PROMPT}
+${CITATIONS_PROMPT}
+${TOOL_CALLING_PROMPT}
+`;
 
 export async function POST(req: Request) {
     const { messages }: { messages: UIMessage[] } = await req.json();
@@ -31,7 +41,7 @@ export async function POST(req: Request) {
         .filter(msg => msg.role === 'user')
         .pop();
 
-    // --- Content Moderation Check ---
+    // --- Content Moderation Check (Keep Existing Logic) ---
     if (latestUserMessage) {
         const textParts = latestUserMessage.parts
             .filter(part => part.type === 'text')
@@ -79,17 +89,17 @@ export async function POST(req: Request) {
 
     // --- AI Response Generation with Tool Calling ---
     
-    // 🔑 Define the available tools. Note: webSearch is replaced by getCurrentRatesTool
+    // Define the available tools (replacing the generic webSearch with your specific Exa tool)
     const availableTools: Record<string, Tool> = {
         getCurrentRatesTool, // Your new specialized Exa tool
-        vectorDatabaseSearch, // Keep the RAG tool (if desired)
+        vectorDatabaseSearch, // Keep the RAG tool
     };
 
     const result = streamText({
         model: MODEL,
-        system: SYSTEM_PROMPT,
+        system: FULL_SYSTEM_PROMPT, // 🔑 Use the assembled prompt here
         messages: convertToModelMessages(messages),
-        tools: availableTools, // Pass the specialized tools
+        tools: availableTools, 
         stopWhen: stepCountIs(10),
         providerOptions: {
             openai: {
