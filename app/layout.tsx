@@ -17,8 +17,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // 🔑 FIX: Apply dark background classes and set the default text color here.
-    // This ensures the body element correctly uses the dark theme.
+    // 🔑 Fix: Enforce dark mode class and global background/text color here.
+    // This is the absolute highest level, preventing body or default CSS from overriding.
     <html lang="en" className="dark bg-slate-950 text-slate-100 antialiased">
       <body className={inter.className}>
         {children}
