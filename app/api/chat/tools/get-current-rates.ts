@@ -3,19 +3,13 @@ import { z } from "zod";
 import Exa from "exa-js";
 
 // Initialize Exa Client using the environment variable
-// This will securely use the EXA_API_KEY set in Vercel.
+// The process.env.EXA_API_KEY must be set in your Vercel project settings.
 const exa = new Exa(process.env.EXA_API_KEY);
 
-/**
- * Tool for searching the live web for current financial rates and offers.
- * This is crucial for RateMind's real-time accuracy.
- */
 export const getCurrentRatesTool = tool({
-  // This description MUST be highly explicit so the LLM knows when to call it.
   description: 
     "Searches the live web for current and accurate financial rates, including APY/APR, loan rates, promotional offers, and product details (e.g., High-Yield Savings Accounts, CDs, Credit Cards) across top financial sources. MUST be used for any query involving numbers, rates, or current market data.",
   
-  // Define the structured input the LLM must provide (inputSchema)
   inputSchema: z.object({
     query: z.string().describe("The user's specific financial search query, e.g., 'highest APY on 1-year CDs' or 'current chase credit card offers'."),
     numResults: z.number().optional().describe("Maximum number of search results to fetch, defaults to 5."),
@@ -28,23 +22,33 @@ export const getCurrentRatesTool = tool({
     try {
       const searchOptions = {
         numResults: numResults,
-        // Set a high character limit so the LLM gets enough context from the financial articles
-        includeContents: { maxCharacters: 2500 }, 
+        // FIX: Explicitly request contents and enable safe truncation. This is essential for the 'text' property.
+        includeContents: { maxCharacters: 2500, autoTruncate: true }, 
+        
         ...(domains.length > 0 && { domains: domains }),
       };
 
-      // Perform the search
+      // Perform the search and fetch contents
       const { results } = await exa.searchAndContents(query, searchOptions);
 
       if (!results || results.length === 0) {
         return "Search failed or returned no results for the specified query and filters.";
       }
 
+      // Filter results to only include those where content (text) was successfully retrieved.
+      // This ensures we only process results with the 'text' property available.
+      const contentfulResults = results.filter(result => result.text && result.text.trim().length > 0);
+
+      if (contentfulResults.length === 0) {
+          return "Search results were found, but the content could not be extracted from the source pages, preventing a factual response.";
+      }
+      
       // Format the results for the LLM to easily synthesize
-      const structuredResults = results.map(result => ({
+      const structuredResults = contentfulResults.map(result => ({
         title: result.title,
         url: result.url,
-        snippet: result.text.trim().slice(0, 500) + '...',
+        // FIX: Safely access the text property and provide a fallback snippet to satisfy TypeScript.
+        snippet: result.text ? result.text.trim().slice(0, 500) + '...' : 'Content not available.', 
         date: result.publishedDate,
       }));
 
@@ -55,7 +59,7 @@ export const getCurrentRatesTool = tool({
       
     } catch (error) {
       console.error("Exa Search Error:", error);
-      return `An error occurred while fetching real-time data for: ${query}. Please ensure the EXA_API_KEY is correct.`;
+      return `An error occurred while fetching real-time data for: ${query}. Please ensure your EXA_API_KEY is correct.`;
     }
   },
 });
