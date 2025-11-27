@@ -1,5 +1,15 @@
 // app/layout.tsx
-import "../styles/globals.css";
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return <html lang="en"><body>{children}</body></html>;
+import "./app/global.css";  // ✔ Correct path based on your folder structure
+
+export const metadata = {
+  title: "Finatic AI",
+  description: "Real-time financial product comparison",
+};
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
 }
