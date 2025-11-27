@@ -1,33 +1,33 @@
-// app/layout.tsx (server)
 import type { Metadata } from "next";
+import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Inter } from "next/font/google";
-import  ThemeToggle  from "./components/theme-toggle";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
-  title: "MyAI3 — Financial Advisor",
-  description: "AI-driven financial product recommendations & analysis",
+  title: "MyAI3",
+  description: "MyAI3",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <html lang="en" className={inter.className}>
-      <body>
-        <div className="app-shell">
-          <div className="container">
-            <div className="chat-card">
-              {/* Header contains theme toggle on the right */}
-              <div style={{ display: "flex", justifyContent: "flex-end", padding: 12 }}>
-                <ThemeToggle />
-              </div>
-
-              {/* App content */}
-              {children}
-            </div>
-          </div>
-        </div>
+    <html lang="en">
+      <body
+        className={`${inter.variable} ${geistMono.variable} antialiased`}
+      >
+        {children}
       </body>
     </html>
   );
