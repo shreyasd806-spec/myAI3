@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { ArrowUpIcon, SendIcon, EraseIcon } from "./icons";
+
 import Image from "next/image";
 
 /* If you have `useChat` from your AI SDK, use it — else mock a simple interface */
