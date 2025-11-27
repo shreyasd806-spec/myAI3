@@ -1,181 +1,329 @@
-// app/page.tsx
+Page.tsx
+
 "use client";
 
-import React, { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import * as z from "zod";
+import { useEffect, useRef, useState } from "react";
 
-/**
- * Single-file page layout for Finatic AI (no external components).
- * - Inline piggy SVG used for hero/mascot
- * - Suggestion chips trigger the input
- * - Footer input is fixed and accessible
- */
+import { Button } from "@/components/ui/button";
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
-export default function Page() {
-  const [query, setQuery] = useState("");
-  const [history, setHistory] = useState<
-    { id: string; from: "user" | "assistant"; text: string }[]
-  >([
-    { id: "welcome", from: "assistant", text: "Hi — I'm Finatic AI. Tell me what you need (savings, CDs, credit cards) and I'll find the best rates." },
-  ]);
+import { useChat } from "@ai-sdk/react";
+import {
+  ArrowUp,
+  Loader2,
+  Plus,
+  Square,
+} from "lucide-react";
 
-  function sendMessage(text?: string) {
-    const trimmed = (text ?? query).trim();
-    if (!trimmed) return;
-    const id = ${Date.now()};
-    setHistory((h) => [...h, { id, from: "user", text: trimmed }]);
-    setQuery("");
-    // Simulated assistant reply (client-only placeholder)
-    setTimeout(() => {
-      setHistory((h) => [
-        ...h,
-        { id: ${id}-resp, from: "assistant", text: Searching live rates for: "${trimmed}" — (demo reply) },
-      ]);
-    }, 700);
+import { MessageWall } from "@/components/messages/message-wall";
+import {
+  ChatHeader,
+  ChatHeaderBlock,
+} from "@/app/parts/chat-header";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UIMessage } from "ai";
+
+import { AI_NAME, CLEAR_CHAT_TEXT, OWNER_NAME, WELCOME_MESSAGE } from "@/config";
+
+import Image from "next/image";
+import Link from "next/link";
+
+const formSchema = z.object({
+  message: z
+    .string()
+    .min(1, "Message cannot be empty.")
+    .max(2000, "Message must be at most 2000 characters."),
+});
+
+const STORAGE_KEY = "chat-messages";
+
+type StorageData = {
+  messages: UIMessage[];
+  durations: Record<string, number>;
+};
+
+const loadMessagesFromStorage = (): {
+  messages: UIMessage[];
+  durations: Record<string, number>;
+} => {
+  if (typeof window === "undefined") {
+    return { messages: [], durations: {} };
   }
 
-  const SUGGESTIONS = [
-    "Show me the best savings accounts",
-    "Compare CD rates right now",
-    "What credit card has the best perks?",
-    "Tell me the latest APY rates",
-  ];
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return { messages: [], durations: {} };
+
+    const parsed = JSON.parse(stored);
+    return {
+      messages: parsed.messages || [],
+      durations: parsed.durations || {},
+    };
+  } catch (error) {
+    console.error("Failed to load messages from localStorage:", error);
+    return { messages: [], durations: {} };
+  }
+};
+
+const saveMessagesToStorage = (
+  messages: UIMessage[],
+  durations: Record<string, number>
+) => {
+  if (typeof window === "undefined") return;
+
+  try {
+    const data: StorageData = { messages, durations };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.error("Failed to save messages to localStorage:", error);
+  }
+};
+
+export default function Chat() {
+  const [isClient, setIsClient] = useState(false);
+  const [durations, setDurations] = useState<Record<string, number>>({});
+  const welcomeMessageShownRef = useRef<boolean>(false);
+
+  const stored =
+    typeof window !== "undefined"
+      ? loadMessagesFromStorage()
+      : { messages: [], durations: {} };
+
+  const [initialMessages] = useState<UIMessage[]>(stored.messages);
+
+  const {
+    messages,
+    sendMessage,
+    status,
+    stop,
+    setMessages,
+  } = useChat({
+    messages: initialMessages,
+  });
+
+  useEffect(() => {
+    setIsClient(true);
+    setDurations(stored.durations);
+    setMessages(stored.messages);
+  }, []);
+
+  useEffect(() => {
+    if (isClient) {
+      saveMessagesToStorage(messages, durations);
+    }
+  }, [durations, messages, isClient]);
+
+  const handleDurationChange = (key: string, duration: number) => {
+    setDurations((prevDurations) => ({
+      ...prevDurations,
+      [key]: duration,
+    }));
+  };
+
+  useEffect(() => {
+    if (
+      isClient &&
+      initialMessages.length === 0 &&
+      !welcomeMessageShownRef.current
+    ) {
+      const welcomeMessage: UIMessage = {
+        id: `welcome-${Date.now()}`,
+        role: "assistant",
+        parts: [
+          {
+            type: "text",
+            text: WELCOME_MESSAGE,
+          },
+        ],
+      };
+
+      setMessages([welcomeMessage]);
+      saveMessagesToStorage([welcomeMessage], {});
+      welcomeMessageShownRef.current = true;
+    }
+  }, [isClient, initialMessages.length, setMessages]);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      message: "",
+    },
+  });
+
+  function onSubmit(data: z.infer<typeof formSchema>) {
+    sendMessage({ text: data.message });
+    form.reset();
+  }
+
+  function clearChat() {
+    const newMessages: UIMessage[] = [];
+    const newDurations = {};
+
+    setMessages(newMessages);
+    setDurations(newDurations);
+    saveMessagesToStorage(newMessages, newDurations);
+
+    toast.success("Chat cleared");
+  }
 
   return (
-    <main className="page-root">
-      <div className="money-bg" aria-hidden="true" />
+    <div className="flex h-screen items-center justify-center font-sans dark:bg-black">
+      <main className="relative h-screen w-full dark:bg-black">
+        {/* Header */}
+        <div className="fixed left-0 right-0 top-0 z-50 bg-linear-to-b from-background via-background/50 to-transparent dark:bg-black pb-16">
+          <div className="relative overflow-visible">
+            <ChatHeader>
+              <ChatHeaderBlock />
 
-      <section className="finatic-window" role="application" aria-label="Finatic AI chat">
-        {/* LEFT: Chat area */}
-        <div className="finatic-left">
-          <header className="finatic-topbar" role="banner">
-            <div className="logo-wrap" aria-hidden>
-              {/* small piggy icon in the header (SVG simplified) */}
-              <svg width="36" height="36" viewBox="0 0 64 64" className="logo-svg" aria-hidden>
-                <g fill="none" fillRule="evenodd">
-                  <circle cx="32" cy="32" r="30" fill="#0F63D8" />
-                  <path d="M22 36c0 0 4-10 18-10 0 0 6 0 10 6 0 0 0 8-8 12" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </g>
-              </svg>
-              <div className="brand-title">Finatic AI</div>
-            </div>
+              <ChatHeaderBlock className="items-center justify-center">
+                <Avatar className="size-8 ring-1 ring-primary">
+                  <AvatarImage src="/logo.png" />
+                  <AvatarFallback>
+                    <Image
+                      src="/logo.png"
+                      alt="Logo"
+                      width={36}
+                      height={36}
+                    />
+                  </AvatarFallback>
+                </Avatar>
 
-            <div className="topbar-text" aria-hidden>
-              Find the best rates — instantly
-            </div>
-          </header>
+                <p className="tracking-tight">
+                  Chat with {AI_NAME}
+                </p>
+              </ChatHeaderBlock>
 
-          <div className="finatic-welcome" role="status">
-            <strong>Hi there!</strong> I’m Finatic AI — I’ll find the best financial products for your needs.
-            Try asking: “Best 1-year CD” or “High-yield savings with no minimum.”
-          </div>
-
-          <div className="search-row" aria-hidden>
-            <input
-              className="search-input"
-              placeholder='E.g., "Find me the best 6-month CD"'
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage();
-                }
-              }}
-            />
-            <button
-              className="send-ghost"
-              title="Send"
-              onClick={() => sendMessage()}
-              aria-label="Send"
-            >
-              ➤
-            </button>
-          </div>
-
-          <div className="suggestion-row" role="list" aria-label="Suggestions">
-            {SUGGESTIONS.map((s) => (
-              <button
-                key={s}
-                className="chip"
-                onClick={() => {
-                  setQuery(s);
-                  // optional immediate send:
-                  // sendMessage(s);
-                }}
-                role="listitem"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-
-          {/* Conversation preview */}
-          <div className="messages" role="log" aria-live="polite">
-            {history.map((m) => (
-              <div
-                key={m.id}
-                className={message-bubble ${m.from === "user" ? "msg-user" : "msg-assistant"}}
-                aria-label={${m.from === "user" ? "You" : "Assistant"}: ${m.text}}
-              >
-                {m.text}
-              </div>
-            ))}
+              <ChatHeaderBlock className="justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer"
+                  onClick={clearChat}
+                >
+                  <Plus className="size-4" />
+                  {CLEAR_CHAT_TEXT}
+                </Button>
+              </ChatHeaderBlock>
+            </ChatHeader>
           </div>
         </div>
 
-        {/* RIGHT: hero / illustration */}
-        <aside className="finatic-hero" aria-hidden>
-          <div className="hero-illustration" role="img" aria-label="Piggy bank mascot">
-            {/* Inline piggy SVG (scalable, no external files) */}
-            <svg viewBox="0 0 360 280" width="320" height="240" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="g" x1="0" x2="1">
-                  <stop offset="0" stopColor="#EAF5FF"/>
-                  <stop offset="1" stopColor="#DDEBFF"/>
-                </linearGradient>
-              </defs>
-              <g transform="translate(20,30)">
-                <ellipse cx="180" cy="130" rx="120" ry="72" fill="url(#g)" stroke="#CFE8FF" strokeWidth="2"/>
-                <rect x="220" y="70" rx="8" ry="8" width="80" height="48" fill="#CDE7FF" />
-                <ellipse cx="120" cy="120" rx="72" ry="50" fill="#F5FBFF" stroke="#C9E6FF" strokeWidth="2"/>
-                <ellipse cx="150" cy="110" rx="22" ry="14" fill="#E6F4FF"/>
-                <circle cx="170" cy="110" r="6" fill="#8AA6D9"/>
-                <path d="M100 40c8-12 32-12 40 0" fill="#DCEFFF"/>
-                <rect x="140" y="72" width="48" height="6" rx="3" fill="#BFE1FF"/>
-                {/* coin */}
-                <g className="coin">
-                  <circle cx="240" cy="30" r="18" fill="#FFCF47" stroke="#F6B800" />
-                  <text x="236" y="36" fontSize="18" fontWeight="700" textAnchor="middle" fill="#9A6800">$</text>
-                </g>
-              </g>
-            </svg>
+        {/* Messages */}
+        <div className="h-screen w-full overflow-y-auto px-5 py-4 pt-[88px] pb-[150px]">
+          <div className="flex min-h-full flex-col items-center justify-end">
+            {isClient ? (
+              <>
+                <MessageWall
+                  messages={messages}
+                  status={status}
+                  durations={durations}
+                  onDurationChange={handleDurationChange}
+                />
+
+                {status === "submitted" && (
+                  <div className="flex w-full max-w-3xl justify-start">
+                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex w-full max-w-2xl justify-center">
+                <Loader2 className="size-4 animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Input */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-linear-to-t from-background via-background/50 to-transparent dark:bg-black pt-13">
+          <div className="relative flex w-full items-center justify-center overflow-visible px-5 pt-5 pb-1">
+            <div className="message-fade-overlay" />
+
+            <div className="w-full max-w-3xl">
+              <form id="chat-form" onSubmit={form.handleSubmit(onSubmit)}>
+                <FieldGroup>
+                  <Controller
+                    name="message"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel
+                          htmlFor="chat-form-message"
+                          className="sr-only"
+                        >
+                          Message
+                        </FieldLabel>
+
+                        <div className="relative h-13">
+                          <Input
+                            {...field}
+                            id="chat-form-message"
+                            className="h-15 rounded-[20px] bg-card pr-15 pl-5"
+                            placeholder="Type your message here..."
+                            disabled={status === "streaming"}
+                            aria-invalid={fieldState.invalid}
+                            autoComplete="off"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                form.handleSubmit(onSubmit)();
+                              }
+                            }}
+                          />
+
+                          {(status === "ready" || status === "error") && (
+                            <Button
+                              className="absolute right-3 top-3 rounded-full"
+                              type="submit"
+                              disabled={!field.value.trim()}
+                              size="icon"
+                            >
+                              <ArrowUp className="size-4" />
+                            </Button>
+                          )}
+
+                          {(status === "streaming" ||
+                            status === "submitted") && (
+                            <Button
+                              className="absolute right-2 top-2 rounded-full"
+                              size="icon"
+                              onClick={() => stop()}
+                            >
+                              <Square className="size-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </Field>
+                    )}
+                  />
+                </FieldGroup>
+              </form>
+            </div>
           </div>
 
-          <div className="hero-text">
-            Compare opportunities to find the best financial products.
+          {/* Footer */}
+          <div className="flex w-full items-center justify-center px-5 py-3 text-xs text-muted-foreground">
+            © {new Date().getFullYear()} {OWNER_NAME}&nbsp;
+            <Link href="/terms" className="underline">
+              Terms of Use
+            </Link>
+            &nbsp;Powered by&nbsp;
+            <Link href="https://ringel.ai/" className="underline">
+              Ringel.AI
+            </Link>
           </div>
-        </aside>
-      </section>
-
-      {/* fixed footer input (accessible) */}
-      <form
-        className="finatic-footer"
-        onSubmit={(e) => {
-          e.preventDefault();
-          sendMessage();
-        }}
-        aria-label="Chat input form"
-      >
-        <label htmlFor="footer-input" className="sr-only">Type a message</label>
-        <input
-          id="footer-input"
-          className="footer-input"
-          placeholder="Type your message..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <button type="submit" className="finatic-send" aria-label="Send message">➤</button>
-      </form>
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }
