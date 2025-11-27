@@ -1,214 +1,201 @@
-/* globals.css - themeable UI + Tailwind base imports */
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Design tokens via CSS variables — two themes: light and dark */
+/* Theme variables */
 :root {
-  --radius: 14px;
+  --radius: 16px;
 
-  /* Light theme defaults */
-  --bg: #f7f9fc;
-  --panel: #ffffff;
-  --muted: #6b7280;
+  --bg: #ecf0f3;
+  --panel: #ffffffee;
+  --panel-dark: rgba(255,255,255,0.75);
+
   --text: #0f172a;
-  --accent: #0ea5a4; /* teal */
-  --accent-foreground: #fff;
+  --text-light: #475569;
+  --accent: #009aa5;
+  --accent-dark: #037a83;
+
+  --border: rgba(0,0,0,0.06);
+  --shadow-1: 0 8px 30px rgba(0,0,0,0.08);
+  --shadow-2: 0 4px 20px rgba(0,0,0,0.05);
+  --card: rgba(255,255,255,0.45);
   --glass: rgba(255,255,255,0.6);
-  --card-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
-  --input-bg: #f1f5f9;
-  --input-border: rgba(15,23,42,0.06);
-  --bubble-user: linear-gradient(135deg,#0ea5a4 0%,#06b6d4 100%);
-  --bubble-assistant: linear-gradient(180deg,#eef2ff 0%,#e9f5ff 100%);
-  --bg-gradient: linear-gradient(180deg, rgba(14,165,164,0.06), transparent);
-  --glass-border: rgba(255,255,255,0.65);
+
+  --user-bubble: linear-gradient(135deg, #009aa5 0%, #00bbc5 100%);
+  --ai-bubble: #ffffff;
 }
 
 /* Dark theme overrides */
 .theme-dark {
-  --bg: #0b1220;
-  --panel: #0f1724;
-  --muted: #94a3b8;
-  --text: #e6eef8;
-  --accent: #7dd3fc; /* light sky */
-  --accent-foreground: #06253a;
-  --glass: rgba(255,255,255,0.03);
-  --card-shadow: 0 8px 40px rgba(2,6,23,0.7);
-  --input-bg: rgba(255,255,255,0.03);
-  --input-border: rgba(255,255,255,0.06);
-  --bubble-user: linear-gradient(135deg,#0284c7 0%,#06b6d4 100%);
-  --bubble-assistant: linear-gradient(180deg,#0b1220 0%,#0f1724 100%);
-  --bg-gradient: linear-gradient(180deg, rgba(125,211,252,0.04), transparent);
-  --glass-border: rgba(255,255,255,0.06);
+  --bg: #0a0f14;
+  --panel: rgba(20,25,30,0.85);
+  --panel-dark: rgba(20,25,30,0.6);
+
+  --text: #e2e8f0;
+  --text-light: #94a3b8;
+  --accent: #38bdf8;
+  --accent-dark: #0ea5e9;
+
+  --border: rgba(255,255,255,0.08);
+  --shadow-1: 0 8px 40px rgba(0,0,0,0.5);
+  --shadow-2: 0 6px 30px rgba(0,0,0,0.35);
+  --card: rgba(255,255,255,0.05);
+
+  --user-bubble: linear-gradient(135deg,#0ea5e9,#38bdf8);
+  --ai-bubble: rgba(255,255,255,0.05);
 }
 
-/* Respect user preference as initial class for new visitors */
-@media (prefers-color-scheme: dark) {
-  :root:not(.theme-light) { /* only apply when no explicit light set */
-    /* runtime: add .theme-dark to html if you wish */
-  }
+/* Background */
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  transition: background .25s ease;
 }
 
-/* Tailwind base adjustments */
-@layer base {
-  html, body, #__next {
-    height: 100%;
-  }
+/* Center container */
+.app-shell {
+  min-height: 100vh;
+  padding: 2rem;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+}
 
-  body {
-    @apply antialiased;
-    background: var(--bg);
-    color: var(--text);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    transition: background .25s ease, color .25s ease;
-  }
+/* Main chat card */
+.chat-card {
+  width: 100%;
+  max-width: 950px;
+  background: var(--panel);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  box-shadow: var(--shadow-1);
+  border: 1px solid var(--border);
+  display:flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
-  /* Main app container background accent */
-  .app-shell {
-    background-image: var(--bg-gradient);
-    min-height: 100vh;
-    padding: 2.25rem;
-  }
+/* Header */
+.chat-header {
+  padding: 1.2rem 1.5rem;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  background: var(--panel-dark);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--border);
+}
 
-  /* Chat wrapper card */
-  .chat-card {
-    background: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,255,255,0.6));
-    background-color: var(--panel);
-    border-radius: var(--radius);
-    box-shadow: var(--card-shadow);
-    border: 1px solid var(--input-border);
-    overflow: hidden;
-    transition: box-shadow .2s ease, transform .15s ease;
-  }
-  .theme-dark .chat-card {
-    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  }
+.chat-title-block {
+  display:flex;
+  align-items:center;
+  gap: 1rem;
+}
 
-  /* Header */
-  .chat-header {
-    padding: 1rem 1.25rem;
-    display:flex;
-    align-items:center;
-    gap: .75rem;
-    border-bottom: 1px solid var(--input-border);
-    background: linear-gradient(90deg, rgba(255,255,255,0.03), transparent);
-  }
+.chat-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
 
-  .chat-title {
-    font-weight: 600;
-    font-size: 1rem;
-    letter-spacing: -0.01em;
-  }
+.chat-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
 
-  .chat-subtitle {
-    font-size: 0.85rem;
-    color: var(--muted);
-  }
+/* Messages area */
+.messages-area {
+  flex:1;
+  padding: 1.5rem;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:1rem;
+}
 
-  /* Message area */
-  .messages-area {
-    height: calc(100vh - 320px);
-    overflow-y: auto;
-    padding: 1.25rem;
-    display:flex;
-    flex-direction:column;
-    gap: .75rem;
-    background: transparent;
-    scroll-behavior: smooth;
-  }
+/* Message bubbles */
+.message-row {
+  display:flex;
+  max-width: 80%;
+}
 
-  /* message bubbles */
-  .msg-row {
-    display:flex;
-    gap:.75rem;
-    align-items:flex-end;
-  }
-  .msg-row.user {
-    justify-content:flex-end;
-  }
-  .msg-bubble {
-    max-width: 72%;
-    padding: .72rem .9rem;
-    border-radius: 14px;
-    font-size: .95rem;
-    line-height: 1.35;
-    box-shadow: 0 6px 18px rgba(2,6,23,0.06);
-    transition: transform .12s ease, box-shadow .12s ease;
-    background: var(--bubble-assistant);
-    color: var(--text);
-    border: 1px solid rgba(0,0,0,0.02);
-  }
-  .theme-dark .msg-bubble {
-    border: 1px solid rgba(255,255,255,0.03);
-  }
-  .msg-bubble.user {
-    background: var(--bubble-user);
-    color: var(--accent-foreground);
-    box-shadow: 0 8px 24px rgba(2,6,23,0.25);
-  }
+.message-row.user {
+  align-self:flex-end;
+  justify-content:flex-end;
+}
 
-  /* Input area */
-  .chat-input-wrap {
-    padding: 1rem 1.25rem;
-    border-top: 1px solid var(--input-border);
-    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.01));
-  }
-  .chat-input {
-    width: 100%;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 999px;
-    padding: .65rem 3.5rem .65rem 1rem;
-    box-shadow: none;
-    transition: box-shadow .12s ease, transform .08s ease;
-  }
-  .chat-input:focus {
-    outline: none;
-    box-shadow: 0 6px 20px rgba(14,165,164,0.08);
-  }
+.msg-bubble {
+  padding: 0.85rem 1.15rem;
+  border-radius: 18px;
+  line-height: 1.45;
+  font-size: 0.95rem;
+  background: var(--ai-bubble);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-2);
+  animation: fadeInUp .25s ease;
+}
 
-  .send-button {
-    position: absolute;
-    right: 1.25rem;
-    top: .9rem;
-    background: var(--accent);
-    color: var(--accent-foreground);
-    border-radius: 999px;
-    padding: .45rem .55rem;
-    border: none;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    box-shadow: 0 6px 18px rgba(14,165,164,0.12);
-  }
+.msg-bubble.user {
+  background: var(--user-bubble);
+  color:white;
+  border:none;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+}
 
-  /* small util */
-  .badge {
-    font-size: .75rem;
-    padding: .15rem .5rem;
-    border-radius: 999px;
-    background: rgba(0,0,0,0.06);
-    color: var(--muted);
-  }
+/* Input area */
+.input-bar-wrapper {
+  padding: 1rem 1.5rem 2rem;
+  background: transparent;
+}
 
-  /* subtle fade near footer/input */
-  .message-fade-overlay {
-    position:absolute;
-    left:0;
-    right:0;
-    bottom:72px;
-    height:42px;
-    pointer-events:none;
-    background: linear-gradient(180deg, transparent, var(--bg));
-  }
+.input-container {
+  background: var(--panel-dark);
+  border-radius: 999px;
+  padding: 0.65rem 1.2rem;
+  display:flex;
+  align-items:center;
+  gap:1rem;
+  border:1px solid var(--border);
+  box-shadow: var(--shadow-2);
+  backdrop-filter: blur(10px);
+}
 
-  /* small responsive tweaks */
-  @media (max-width: 768px) {
-    .chat-card { border-radius: 12px; }
-    .msg-bubble { max-width: 86%; }
-    .messages-area { height: calc(100vh - 300px); }
-  }
+.input-field {
+  flex:1;
+  background: transparent;
+  border:none;
+  outline:none;
+  color:var(--text);
+  font-size:0.95rem;
+}
 
-  /* micro-animations */
-  .msg-bubble:hover { transform: translateY(-2px); }
+.send-btn {
+  background: var(--accent);
+  color:white;
+  padding:0.55rem;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+}
+
+.send-btn:hover {
+  background: var(--accent-dark);
+}
+
+/* Footer */
+.chat-footer {
+  font-size:0.8rem;
+  text-align:center;
+  color:var(--text-light);
+  padding-top:1rem;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from { opacity:0; transform:translateY(6px); }
+  to { opacity:1; transform:translateY(0); }
 }
