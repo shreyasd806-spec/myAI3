@@ -1,5 +1,5 @@
 // app/layout.tsx
-import "./app/global.css";  // ✔ Correct path based on your folder structure
+import "./app/globals.css";  // ✔ Correct path based on your folder structure
 
 export const metadata = {
   title: "Finatic AI",
