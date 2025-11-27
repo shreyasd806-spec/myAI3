@@ -1,7 +1,8 @@
+// app/layout.tsx (server)
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-import { ThemeToggle } from "./components/theme-toggle";
+import { Inter } from "next/font/google";
+import ThemeToggle from "./components/theme-toggle";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -12,14 +13,19 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className={inter.className}>
+      <body>
         <div className="app-shell">
-          <div className="w-full max-w-4xl mx-auto">
-            <div className="flex justify-end mb-4">
-              <ThemeToggle />
+          <div className="container">
+            <div className="chat-card">
+              {/* Header contains theme toggle on the right */}
+              <div style={{ display: "flex", justifyContent: "flex-end", padding: 12 }}>
+                <ThemeToggle />
+              </div>
+
+              {/* App content */}
+              {children}
             </div>
-            <div className="chat-card">{children}</div>
           </div>
         </div>
       </body>
