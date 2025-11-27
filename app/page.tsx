@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useChat } from "@ai-sdk/react";
-import { ArrowUp, Eraser, Loader2, Plus, PlusIcon, Square } from "lucide-react";
+import { ArrowUp, Eraser, Loader2, Plus, Square, DollarSign } from "lucide-react";
 import { MessageWall } from "@/components/messages/message-wall";
 import { ChatHeader } from "@/app/parts/chat-header";
 import { ChatHeaderBlock } from "@/app/parts/chat-header";
@@ -70,6 +70,7 @@ export default function Chat() {
   const [durations, setDurations] = useState<Record<string, number>>({});
   const welcomeMessageShownRef = useRef<boolean>(false);
 
+  // NOTE: Initial messages are loaded once. Using 'stored' outside useEffect is fine since this is a client component.
   const stored = typeof window !== 'undefined' ? loadMessagesFromStorage() : { messages: [], durations: {} };
   const [initialMessages] = useState<UIMessage[]>(stored.messages);
 
@@ -79,6 +80,7 @@ export default function Chat() {
 
   useEffect(() => {
     setIsClient(true);
+    // Initialize durations and messages from storage in client-side effect
     setDurations(stored.durations);
     setMessages(stored.messages);
   }, []);
@@ -137,58 +139,65 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex h-screen items-center justify-center font-sans dark:bg-black">
-      <main className="w-full dark:bg-black h-screen relative">
-        <div className="fixed top-0 left-0 right-0 z-50 bg-linear-to-b from-background via-background/50 to-transparent dark:bg-black overflow-visible pb-16">
+    // 🔑 Theme Update: Dark Slate Background (common in finance apps for high contrast/trust)
+    <div className="flex h-screen items-center justify-center font-sans bg-slate-950 text-slate-100">
+      <main className="w-full bg-slate-950 h-screen relative">
+        {/* 🔑 Header Area: Fixed, Darker Slate Background */}
+        <div className="fixed top-0 left-0 right-0 z-50 bg-slate-900 shadow-lg border-b border-slate-700/50 overflow-visible pb-4">
           <div className="relative overflow-visible">
             <ChatHeader>
-              <ChatHeaderBlock />
+              <ChatHeaderBlock className="pl-4">
+                <h1 className="text-xl font-bold tracking-tighter text-blue-400">RateMind</h1>
+              </ChatHeaderBlock>
               <ChatHeaderBlock className="justify-center items-center">
                 <Avatar
-                  className="size-8 ring-1 ring-primary"
+                  className="size-8 ring-2 ring-blue-500 bg-slate-800" // Themed ring color
                 >
-                  <AvatarImage src="/logo.png" />
-                  <AvatarFallback>
-                    <Image src="/logo.png" alt="Logo" width={36} height={36} />
+                  {/* 🔑 Icon/Logo: Use a financial icon for branding */}
+                  <AvatarFallback className="text-xl bg-slate-800 text-yellow-300">
+                    <DollarSign className="size-5" />
                   </AvatarFallback>
                 </Avatar>
-                <p className="tracking-tight">Chat with {AI_NAME}</p>
+                <p className="tracking-tight text-slate-300 font-medium ml-2">Chat with {AI_NAME}</p>
               </ChatHeaderBlock>
-              <ChatHeaderBlock className="justify-end">
+              <ChatHeaderBlock className="justify-end pr-4">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="cursor-pointer"
+                  className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700/80 rounded-full transition-colors"
                   onClick={clearChat}
                 >
-                  <Plus className="size-4" />
+                  <Plus className="size-4 mr-1 text-blue-400" />
                   {CLEAR_CHAT_TEXT}
                 </Button>
               </ChatHeaderBlock>
             </ChatHeader>
           </div>
         </div>
-        <div className="h-screen overflow-y-auto px-5 py-4 w-full pt-[88px] pb-[150px]">
-          <div className="flex flex-col items-center justify-end min-h-full">
+        
+        {/* Chat Message Area */}
+        <div className="h-screen overflow-y-auto px-5 py-4 w-full pt-[90px] pb-[150px] flex justify-center">
+          <div className="flex flex-col items-center justify-end min-h-full max-w-4xl w-full">
             {isClient ? (
               <>
                 <MessageWall messages={messages} status={status} durations={durations} onDurationChange={handleDurationChange} />
                 {status === "submitted" && (
-                  <div className="flex justify-start max-w-3xl w-full">
-                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  <div className="flex justify-start max-w-3xl w-full py-2">
+                    <Loader2 className="size-4 animate-spin text-blue-400" /> {/* Themed spinner color */}
                   </div>
                 )}
               </>
             ) : (
               <div className="flex justify-center max-w-2xl w-full">
-                <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                <Loader2 className="size-4 animate-spin text-blue-400" />
               </div>
             )}
           </div>
         </div>
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-linear-to-t from-background via-background/50 to-transparent dark:bg-black overflow-visible pt-13">
-          <div className="w-full px-5 pt-5 pb-1 items-center flex justify-center relative overflow-visible">
-            <div className="message-fade-overlay" />
+        
+        {/* 🔑 Input Area: Fixed, Darker Slate Background with Border */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-slate-700/50 overflow-visible pt-4 pb-4">
+          <div className="w-full px-5 pt-1 pb-1 items-center flex justify-center relative overflow-visible">
             <div className="max-w-3xl w-full">
               <form id="chat-form" onSubmit={form.handleSubmit(onSubmit)}>
                 <FieldGroup>
@@ -200,12 +209,13 @@ export default function Chat() {
                         <FieldLabel htmlFor="chat-form-message" className="sr-only">
                           Message
                         </FieldLabel>
-                        <div className="relative h-13">
+                        <div className="relative">
                           <Input
                             {...field}
                             id="chat-form-message"
-                            className="h-15 pr-15 pl-5 bg-card rounded-[20px]"
-                            placeholder="Type your message here..."
+                            // 🔑 Input Style: High contrast, rounded, professional border/shadow
+                            className="h-15 pr-15 pl-5 bg-white text-slate-900 placeholder:text-slate-500 border border-slate-500 shadow-lg focus-visible:ring-blue-500 focus-visible:border-blue-500 rounded-xl transition-shadow"
+                            placeholder="Ask RateMind for the latest HYSA APY or credit card offer..."
                             disabled={status === "streaming"}
                             aria-invalid={fieldState.invalid}
                             autoComplete="off"
@@ -218,7 +228,7 @@ export default function Chat() {
                           />
                           {(status == "ready" || status == "error") && (
                             <Button
-                              className="absolute right-3 top-3 rounded-full"
+                              className="absolute right-3 top-2 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors" // Themed button
                               type="submit"
                               disabled={!field.value.trim()}
                               size="icon"
@@ -228,7 +238,7 @@ export default function Chat() {
                           )}
                           {(status == "streaming" || status == "submitted") && (
                             <Button
-                              className="absolute right-2 top-2 rounded-full"
+                              className="absolute right-2 top-2 rounded-full bg-red-600 hover:bg-red-700 transition-colors"
                               size="icon"
                               onClick={() => {
                                 stop();
@@ -245,8 +255,9 @@ export default function Chat() {
               </form>
             </div>
           </div>
-          <div className="w-full px-5 py-3 items-center flex justify-center text-xs text-muted-foreground">
-            © {new Date().getFullYear()} {OWNER_NAME}&nbsp;<Link href="/terms" className="underline">Terms of Use</Link>&nbsp;Powered by&nbsp;<Link href="https://ringel.ai/" className="underline">Ringel.AI</Link>
+          {/* 🔑 Footer: Themed text color and layout for legal info */}
+          <div className="w-full px-5 py-3 items-center flex justify-center text-xs text-slate-500 mt-2">
+            © {new Date().getFullYear()} {OWNER_NAME}&nbsp;<Link href="/terms" className="underline hover:text-blue-400 transition-colors">Terms of Use</Link>&nbsp;Powered by&nbsp;<Link href="https://ringel.ai/" className="underline hover:text-blue-400 transition-colors">Ringel.AI</Link>
           </div>
         </div>
       </main>
