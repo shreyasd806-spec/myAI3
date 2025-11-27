@@ -39,4 +39,3 @@ When the tool is called, you MUST synthesize the results into a concise, easily 
 
 // NOTE: Your original file may have a separate SYSTEM_PROMPT export. 
 // If it does, you can delete that export, as we are now building the full prompt in route.ts.
-
