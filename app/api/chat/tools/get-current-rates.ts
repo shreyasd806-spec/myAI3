@@ -43,11 +43,12 @@ export const getCurrentRatesTool = tool({
         return "Search failed or returned no results for the specified query and filters.";
       }
       
-      // 🔑 FIX: Assert the type of the results to ContentfulResult[]
-      // This tells TypeScript that because we used includeContents, 'text' *is* present.
-      const resultsWithContent = searchResponse.results as ContentfulResult[];
+      // 🔑 FINAL FIX: Convert the result array to unknown first before asserting the type.
+      // This satisfies the strict TypeScript compiler regarding the lack of overlap.
+      const resultsWithContent = searchResponse.results as unknown as ContentfulResult[];
 
       // Filter results to only include those where content (text) was successfully retrieved.
+      // This is necessary for runtime safety, even with the type assertion.
       const contentfulResults = resultsWithContent.filter(result => result.text && result.text.trim().length > 0);
 
       if (contentfulResults.length === 0) {
@@ -58,7 +59,7 @@ export const getCurrentRatesTool = tool({
       const structuredResults = contentfulResults.map(result => ({
         title: result.title,
         url: result.url,
-        // Now 'result.text' is recognized and can be safely accessed
+        // 'result.text' is now guaranteed to exist by the filter and type assertion
         snippet: result.text.trim().slice(0, 500) + '...', 
         date: result.publishedDate,
       }));
