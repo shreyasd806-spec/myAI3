@@ -6,17 +6,14 @@ import { toast } from "sonner";
 import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useChat } from "@ai-sdk/react";
-import { ArrowUp, Loader2, Plus, Square, DollarSign } from "lucide-react";
+import { ArrowUp, Eraser, Loader2, Plus, Square } from "lucide-react";
 import { MessageWall } from "@/components/messages/message-wall";
-// ❌ REMOVED IMPORTS: ChatHeader and ChatHeaderBlock
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ChatHeader } from "@/app/parts/chat-header";
+import { ChatHeaderBlock } from "@/app/parts/chat-header";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UIMessage } from "ai";
 import { useEffect, useState, useRef } from "react";
 import { AI_NAME, CLEAR_CHAT_TEXT, OWNER_NAME, WELCOME_MESSAGE } from "@/config";
@@ -24,13 +21,10 @@ import Image from "next/image";
 import Link from "next/link";
 
 const formSchema = z.object({
-  message: z
-    .string()
-    .min(1, "Message cannot be empty.")
-    .max(2000, "Message must be at most 2000 characters."),
+  message: z.string().min(1, "Message cannot be empty.").max(2000, "Message must be at most 2000 characters."),
 });
 
-const STORAGE_KEY = 'chat-messages';
+const STORAGE_KEY = "chat-messages";
 
 type StorageData = {
   messages: UIMessage[];
@@ -38,29 +32,25 @@ type StorageData = {
 };
 
 const loadMessagesFromStorage = (): { messages: UIMessage[]; durations: Record<string, number> } => {
-  if (typeof window === 'undefined') return { messages: [], durations: {} };
+  if (typeof window === "undefined") return { messages: [], durations: {} };
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return { messages: [], durations: {} };
-
     const parsed = JSON.parse(stored);
-    return {
-      messages: parsed.messages || [],
-      durations: parsed.durations || {},
-    };
+    return { messages: parsed.messages || [], durations: parsed.durations || {} };
   } catch (error) {
-    console.error('Failed to load messages from localStorage:', error);
+    console.error("Failed to load messages from localStorage:", error);
     return { messages: [], durations: {} };
   }
 };
 
 const saveMessagesToStorage = (messages: UIMessage[], durations: Record<string, number>) => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   try {
     const data: StorageData = { messages, durations };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
-    console.error('Failed to save messages to localStorage:', error);
+    console.error("Failed to save messages to localStorage:", error);
   }
 };
 
@@ -69,7 +59,7 @@ export default function Chat() {
   const [durations, setDurations] = useState<Record<string, number>>({});
   const welcomeMessageShownRef = useRef<boolean>(false);
 
-  const stored = typeof window !== 'undefined' ? loadMessagesFromStorage() : { messages: [], durations: {} };
+  const stored = typeof window !== "undefined" ? loadMessagesFromStorage() : { messages: [], durations: {} };
   const [initialMessages] = useState<UIMessage[]>(stored.messages);
 
   const { messages, sendMessage, status, stop, setMessages } = useChat({
@@ -80,6 +70,7 @@ export default function Chat() {
     setIsClient(true);
     setDurations(stored.durations);
     setMessages(stored.messages);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -101,24 +92,18 @@ export default function Chat() {
       const welcomeMessage: UIMessage = {
         id: `welcome-${Date.now()}`,
         role: "assistant",
-        parts: [
-          {
-            type: "text",
-            text: WELCOME_MESSAGE,
-          },
-        ],
+        parts: [{ type: "text", text: WELCOME_MESSAGE }],
       };
       setMessages([welcomeMessage]);
       saveMessagesToStorage([welcomeMessage], {});
       welcomeMessageShownRef.current = true;
     }
-  }, [isClient, initialMessages.length, setMessages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isClient, initialMessages.length]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      message: "",
-    },
+    defaultValues: { message: "" },
   });
 
   function onSubmit(data: z.infer<typeof formSchema>) {
@@ -136,139 +121,115 @@ export default function Chat() {
   }
 
   return (
-    // 🔑 Theme Update: Container to match the layout's background
-    <div className="flex h-screen items-center justify-center font-sans bg-slate-950 text-slate-100">
-      <main className="w-full bg-slate-950 h-screen relative">
-        
-        {/* 🔑 FIXED HEADER: INLINED CHAT HEADER LOGIC (Removing dependency on app/parts/chat-header) */}
-        <div className="fixed top-0 left-0 right-0 z-50 bg-slate-900 shadow-lg border-b border-slate-700/50 overflow-visible pb-4">
-          <div className="relative overflow-visible max-w-4xl w-full mx-auto"> 
-            
-            {/* Replaces <ChatHeader> */}
-            <header className="flex items-center justify-between p-4 h-[60px]">
-                
-                {/* Replaces <ChatHeaderBlock className="pl-4"> */}
-                <div className="flex-1 pl-0"> 
-                    <h1 className="text-xl font-bold tracking-tighter text-blue-400">RateMind</h1>
-                </div>
-
-                {/* Replaces <ChatHeaderBlock className="justify-center items-center"> */}
-                <div className="flex-1 flex justify-center items-center">
-                    <Avatar
-                      className="size-8 ring-2 ring-blue-500 bg-slate-800"
-                    >
-                      {/* 🔑 Icon/Logo: Use a financial icon for branding */}
-                      <AvatarFallback className="text-xl bg-slate-800 text-yellow-300">
-                        <DollarSign className="size-5" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <p className="tracking-tight text-slate-300 font-medium ml-2">Chat with {AI_NAME}</p>
-                </div>
-
-                {/* Replaces <ChatHeaderBlock className="justify-end pr-4"> */}
-                <div className="flex-1 flex justify-end pr-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700/80 rounded-full transition-colors"
-                      onClick={clearChat}
-                    >
-                      <Plus className="size-4 mr-1 text-blue-400" />
-                      {CLEAR_CHAT_TEXT}
-                    </Button>
-                </div>
-            </header>
-            {/* End Header Replacement */}
-            
+    <div className="w-full h-full flex flex-col">
+      {/* Header */}
+      <div className="chat-header">
+        <ChatHeaderBlock className="flex items-center gap-3">
+          <Avatar className="w-10 h-10 ring-1 ring-offset-1" >
+            <AvatarImage src="/logo.png" />
+            <AvatarFallback>
+              <Image src="/logo.png" alt="Logo" width={36} height={36} />
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <div className="chat-title">Chat with {AI_NAME}</div>
+            <div className="chat-subtitle">Personalized financial product advisor — comparison & recommendations</div>
           </div>
+        </ChatHeaderBlock>
+
+        <div className="ml-auto flex items-center gap-3">
+          <button
+            onClick={clearChat}
+            className="badge hover:bg-transparent transition-colors"
+            title="Clear chat"
+          >
+            <Eraser className="w-4 h-4 inline-block mr-1" /> Clear
+          </button>
+          <div className="badge">Powered by {OWNER_NAME}</div>
         </div>
-        
-        {/* Chat Message Area */}
-        <div className="h-screen overflow-y-auto px-5 py-4 w-full pt-[90px] pb-[150px] flex justify-center">
-          <div className="flex flex-col items-center justify-end min-h-full max-w-4xl w-full">
-            {isClient ? (
-              <>
-                <MessageWall messages={messages} status={status} durations={durations} onDurationChange={handleDurationChange} />
-                {status === "submitted" && (
-                  <div className="flex justify-start max-w-3xl w-full py-2">
-                    <Loader2 className="size-4 animate-spin text-blue-400" /> {/* Themed spinner color */}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="flex justify-center max-w-2xl w-full">
-                <Loader2 className="size-4 animate-spin text-blue-400" />
+      </div>
+
+      {/* Messages */}
+      <div className="messages-area">
+        {isClient ? (
+          <>
+            <MessageWall messages={messages} status={status} durations={durations} onDurationChange={handleDurationChange} />
+            {status === "submitted" && (
+              <div className="flex justify-start max-w-3xl w-full">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               </div>
             )}
+          </>
+        ) : (
+          <div className="flex justify-center items-center w-full h-36">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
-        </div>
-        
-        {/* 🔑 Input Area: Fixed, Darker Slate Background with Border */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-slate-700/50 overflow-visible pt-4 pb-4">
-          <div className="w-full px-5 pt-1 pb-1 items-center flex justify-center relative overflow-visible">
-            <div className="max-w-3xl w-full">
-              <form id="chat-form" onSubmit={form.handleSubmit(onSubmit)}>
-                <FieldGroup>
-                  <Controller
-                    name="message"
-                    control={form.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="chat-form-message" className="sr-only">
-                          Message
-                        </FieldLabel>
-                        <div className="relative">
-                          <Input
-                            {...field}
-                            id="chat-form-message"
-                            // 🔑 Input Style: High contrast, rounded, professional border/shadow
-                            className="h-15 pr-15 pl-5 bg-white text-slate-900 placeholder:text-slate-500 border border-slate-500 shadow-lg focus-visible:ring-blue-500 focus-visible:border-blue-500 rounded-xl transition-shadow"
-                            placeholder="Ask RateMind for the latest HYSA APY or credit card offer..."
-                            disabled={status === "streaming"}
-                            aria-invalid={fieldState.invalid}
-                            autoComplete="off"
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                form.handleSubmit(onSubmit)();
-                              }
-                            }}
-                          />
-                          {(status == "ready" || status == "error") && (
-                            <Button
-                              className="absolute right-3 top-2 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors" // Themed button
-                              type="submit"
-                              disabled={!field.value.trim()}
-                              size="icon"
-                            >
-                              <ArrowUp className="size-4" />
-                            </Button>
-                          )}
-                          {(status == "streaming" || status == "submitted") && (
-                            <Button
-                              className="absolute right-2 top-2 rounded-full bg-red-600 hover:bg-red-700 transition-colors"
-                              size="icon"
-                              onClick={() => {
-                                stop();
-                              }}
-                            >
-                              <Square className="size-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </Field>
+        )}
+      </div>
+
+      {/* Input & footer */}
+      <div className="chat-input-wrap relative">
+        <div className="max-w-3xl mx-auto w-full relative">
+          <form id="chat-form" onSubmit={form.handleSubmit(onSubmit)}>
+            <FieldGroup>
+              <Controller
+                name="message"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid} className="relative">
+                    <FieldLabel htmlFor="chat-form-message" className="sr-only">Message</FieldLabel>
+
+                    <input
+                      {...field}
+                      id="chat-form-message"
+                      className="chat-input"
+                      placeholder="Ask about returns, fees, comparisons — e.g. 'Compare these mutual funds for my moderate risk profile'..."
+                      disabled={status === "streaming"}
+                      aria-invalid={fieldState.invalid}
+                      autoComplete="off"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          form.handleSubmit(onSubmit)();
+                        }
+                      }}
+                    />
+
+                    {/* Send / stop button */}
+                    {(status === "ready" || status === "error") && (
+                      <button
+                        type="submit"
+                        className="send-button"
+                        disabled={!field.value.trim()}
+                        aria-label="Send message"
+                        title="Send"
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </button>
                     )}
-                  />
-                </FieldGroup>
-              </form>
-            </div>
-          </div>
-          {/* 🔑 Footer: Themed text color and layout for legal info */}
-          <div className="w-full px-5 py-3 items-center flex justify-center text-xs text-slate-500 mt-2">
-            © {new Date().getFullYear()} {OWNER_NAME}&nbsp;<Link href="/terms" className="underline hover:text-blue-400 transition-colors">Terms of Use</Link>&nbsp;Powered by&nbsp;<Link href="https://ringel.ai/" className="underline hover:text-blue-400 transition-colors">Ringel.AI</Link>
-          </div>
+
+                    {(status === "streaming" || status === "submitted") && (
+                      <button
+                        type="button"
+                        onClick={() => stop()}
+                        className="send-button"
+                        title="Stop streaming"
+                        aria-label="Stop"
+                      >
+                        <Square className="w-4 h-4" />
+                      </button>
+                    )}
+                  </Field>
+                )}
+              />
+            </FieldGroup>
+          </form>
         </div>
-      </main>
-    </div >
+
+        <div className="w-full px-5 pt-3 pb-4 items-center flex justify-center text-xs text-muted-foreground">
+          © {new Date().getFullYear()} {OWNER_NAME} • <Link href="/terms" className="underline">Terms</Link> • <Link href="https://ringel.ai/" className="underline">Ringel.AI</Link>
+        </div>
+      </div>
+    </div>
   );
 }
