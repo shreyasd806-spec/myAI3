@@ -13,11 +13,11 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useChat } from "@ai-sdk/react";
-import { ArrowUp, Eraser, Loader2, Plus, Square, DollarSign } from "lucide-react";
+import { ArrowUp, Loader2, Plus, Square, DollarSign } from "lucide-react";
 import { MessageWall } from "@/components/messages/message-wall";
 import { ChatHeader } from "@/app/parts/chat-header";
 import { ChatHeaderBlock } from "@/app/parts/chat-header";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UIMessage } from "ai";
 import { useEffect, useState, useRef } from "react";
 import { AI_NAME, CLEAR_CHAT_TEXT, OWNER_NAME, WELCOME_MESSAGE } from "@/config";
@@ -70,7 +70,6 @@ export default function Chat() {
   const [durations, setDurations] = useState<Record<string, number>>({});
   const welcomeMessageShownRef = useRef<boolean>(false);
 
-  // NOTE: Initial messages are loaded once. Using 'stored' outside useEffect is fine since this is a client component.
   const stored = typeof window !== 'undefined' ? loadMessagesFromStorage() : { messages: [], durations: {} };
   const [initialMessages] = useState<UIMessage[]>(stored.messages);
 
@@ -80,7 +79,6 @@ export default function Chat() {
 
   useEffect(() => {
     setIsClient(true);
-    // Initialize durations and messages from storage in client-side effect
     setDurations(stored.durations);
     setMessages(stored.messages);
   }, []);
@@ -139,7 +137,7 @@ export default function Chat() {
   }
 
   return (
-    // 🔑 Theme Update: Dark Slate Background (common in finance apps for high contrast/trust)
+    // 🔑 Theme Update: Container to match the layout's background
     <div className="flex h-screen items-center justify-center font-sans bg-slate-950 text-slate-100">
       <main className="w-full bg-slate-950 h-screen relative">
         {/* 🔑 Header Area: Fixed, Darker Slate Background */}
