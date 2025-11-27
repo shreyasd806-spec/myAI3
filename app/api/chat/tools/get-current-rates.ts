@@ -2,8 +2,17 @@ import { tool } from "ai";
 import { z } from "zod";
 import Exa from "exa-js";
 
+// Define a type for the Exa search result that explicitly includes content (text)
+// This is necessary because TypeScript's default type for search results sometimes omits 'text'.
+interface ContentfulResult {
+    title: string | null;
+    url: string;
+    publishedDate?: string;
+    text: string; // Explicitly includes the text property
+    // Include other Exa properties if needed
+}
+
 // Initialize Exa Client using the environment variable
-// The process.env.EXA_API_KEY must be set in your Vercel project settings.
 const exa = new Exa(process.env.EXA_API_KEY);
 
 export const getCurrentRatesTool = tool({
@@ -22,22 +31,24 @@ export const getCurrentRatesTool = tool({
     try {
       const searchOptions = {
         numResults: numResults,
-        // FIX: Explicitly request contents and enable safe truncation. This is essential for the 'text' property.
+        // Explicitly request contents and enable safe truncation.
         includeContents: { maxCharacters: 2500, autoTruncate: true }, 
         
         ...(domains.length > 0 && { domains: domains }),
       };
 
-      // Perform the search and fetch contents
-      const { results } = await exa.searchAndContents(query, searchOptions);
-
-      if (!results || results.length === 0) {
+      const searchResponse = await exa.searchAndContents(query, searchOptions);
+      
+      if (!searchResponse.results || searchResponse.results.length === 0) {
         return "Search failed or returned no results for the specified query and filters.";
       }
+      
+      // 🔑 FIX: Assert the type of the results to ContentfulResult[]
+      // This tells TypeScript that because we used includeContents, 'text' *is* present.
+      const resultsWithContent = searchResponse.results as ContentfulResult[];
 
       // Filter results to only include those where content (text) was successfully retrieved.
-      // This ensures we only process results with the 'text' property available.
-      const contentfulResults = results.filter(result => result.text && result.text.trim().length > 0);
+      const contentfulResults = resultsWithContent.filter(result => result.text && result.text.trim().length > 0);
 
       if (contentfulResults.length === 0) {
           return "Search results were found, but the content could not be extracted from the source pages, preventing a factual response.";
@@ -47,8 +58,8 @@ export const getCurrentRatesTool = tool({
       const structuredResults = contentfulResults.map(result => ({
         title: result.title,
         url: result.url,
-        // FIX: Safely access the text property and provide a fallback snippet to satisfy TypeScript.
-        snippet: result.text ? result.text.trim().slice(0, 500) + '...' : 'Content not available.', 
+        // Now 'result.text' is recognized and can be safely accessed
+        snippet: result.text.trim().slice(0, 500) + '...', 
         date: result.publishedDate,
       }));
 
